@@ -1,0 +1,31 @@
+STYLING [Tailwind CSS and component styling conventions]
+deps=index.cuntext
+
+approach:
+  Tailwind utility classes only — no CSS modules, no styled-components
+  Component variants: cva() from class-variance-authority (see components/ui/)
+  Dark mode: class strategy — toggle "dark" on <html>, read via dark: prefix
+  Responsive: mobile-first — sm: md: lg: xl: 2xl: breakpoints
+
+conventions:
+  Layout spacing: p-4 p-6 p-8 (4=1rem, 6=1.5rem, 8=2rem)
+  Container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+  Typography: prose class from @tailwindcss/typography for markdown content
+  Colors: use CSS variables (--background --foreground --primary etc) not raw colors
+  note: CSS variables defined in app/globals.css — add new tokens there, not inline
+
+shadcn-ui:
+  Add component: npx shadcn@latest add {component-name}
+  All primitives in components/ui/ — extend by wrapping, not modifying
+  Docs: ui.shadcn.com
+
+animations:
+  tailwindcss-animate (bundled with shadcn) for enter/exit
+  Complex: framer-motion — import { motion } from "framer-motion"
+
+ex:
+  # responsive card with dark mode
+  <div className="rounded-lg border bg-card p-6 shadow-sm dark:bg-card/50">
+    <h2 className="text-lg font-semibold text-foreground">Title</h2>
+    <p className="mt-2 text-sm text-muted-foreground">Body text</p>
+  </div>

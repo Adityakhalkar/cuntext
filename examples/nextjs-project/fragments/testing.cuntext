@@ -1,0 +1,39 @@
+TESTING [test patterns and setup]
+deps=index.cuntext
+
+stack: Vitest + React Testing Library (unit/component) — Playwright (e2e)
+config: vitest.config.ts  playwright.config.ts
+
+unit-tests:
+  location: __tests__/{name}.test.ts  or colocated {name}.test.ts
+  run: npx vitest run
+  watch: npx vitest
+
+component-tests:
+  render with RTL — assert on accessible roles, not implementation details
+  mock DB/auth: vi.mock("@/lib/db")  vi.mock("@/lib/auth")
+  note: test Server Components by calling them as async functions, not with render()
+
+e2e-tests:
+  location: e2e/{name}.spec.ts
+  run: npx playwright test
+  auth: use storageState to reuse signed-in session across tests (see e2e/fixtures/auth.ts)
+
+coverage:
+  npx vitest run --coverage
+  target: functions >80%, lines >70% for /app/actions/ and /lib/
+
+what-to-test:
+  Server Actions: input validation, DB side effects, revalidation
+  API routes: request/response shape, auth guard (401 if no session)
+  Components: user interactions, conditional rendering, form submission
+
+ex:
+  // testing a server action
+  import { createItem } from "@/app/actions/items"
+  vi.mock("@/lib/db", () => ({ db: { item: { create: vi.fn() } } }))
+  it("returns error when name missing", async () => {
+    const fd = new FormData()
+    const result = await createItem(fd)
+    expect(result).toEqual({ error: "name required" })
+  })
