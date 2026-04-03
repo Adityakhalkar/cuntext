@@ -1,0 +1,43 @@
+PATTERNS [debugging and error handling patterns]
+deps=index.cuntext
+
+error-boundary:
+  app/error.tsx = global boundary ("use client" required)
+  app/{route}/error.tsx = scoped boundary
+  props: { error: Error & { digest?: string }, reset: () => void }
+
+common-errors:
+  "useRouter called outside client"  → add "use client" to component
+  "cannot read headers() / cookies()" → move to Server Component or API route handler
+  "hydration mismatch"               → Date/Math.random in render; use suppressHydrationWarning or move to useEffect
+  "PrismaClientKnownRequestError P2002" → unique constraint — check before insert or use upsert
+  N+1 queries                        → add include: { relation: true } to Prisma query
+
+server-action-pattern:
+  "use server"
+  validate input → db operation → revalidatePath/revalidateTag → return {ok} or {error}
+  note: never throw from Server Actions — return error objects instead
+
+logging:
+  server components/actions: console.error → terminal
+  client errors: Sentry at src/lib/sentry.ts (NEXT_PUBLIC_SENTRY_DSN)
+
+debug:
+  server: NODE_OPTIONS='--inspect' next dev → attach at chrome://inspect
+  client: browser devtools, React DevTools
+  DB slow queries: add log: ["query", "warn"] to PrismaClient constructor
+
+ex:
+  // server action returning structured result
+  export async function createItem(data: FormData) {
+    "use server"
+    const name = data.get("name") as string
+    if (!name) return { error: "name required" }
+    try {
+      await db.item.create({ data: { name, userId: session.user.id } })
+      revalidatePath("/items")
+      return { ok: true }
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
+  }

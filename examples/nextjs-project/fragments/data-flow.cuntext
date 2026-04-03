@@ -1,0 +1,43 @@
+DATA-FLOW [how data moves through the app]
+deps=index.cuntext architecture.cuntext
+
+read-path:
+  Server Component → db.model.findMany() → render
+  Client Component → SWR useSWR("/api/resource") → render
+  note: prefer Server Components for initial data — avoids client roundtrip and waterfall
+
+write-path:
+  form → Server Action → db mutation → revalidatePath() → redirect or return result
+  client fetch → POST /api/resource → return JSON → client updates via SWR mutate()
+
+caching:
+  Next.js caches fetch() by default — use cache: "no-store" for live data
+  Prisma queries: not cached — results always fresh
+  Revalidate route after mutation: revalidatePath("/path") or revalidateTag("tag")
+  On-demand: revalidateTag() + fetch({ next: { tags: ["tag"] } }) for fine-grained control
+
+auth-guard:
+  server: const session = await auth(); if (!session) redirect("/login")
+  api route: const session = await auth(); if (!session) return NextResponse.json({},{ status:401 })
+  middleware: see middleware.ts — protects route groups without per-page checks
+
+optimistic-updates:
+  useSWR mutate(key, newData, { optimisticData, revalidate: false })
+  roll back on error in onError callback
+
+pagination:
+  cursor-based: GET /api/items?cursor={id}&limit=20
+  Prisma: findMany({ take: 20, skip: 1, cursor: { id: cursor } })
+
+ex:
+  # read in server component
+  const posts = await db.post.findMany({ orderBy: { createdAt: "desc" }, take: 10 })
+
+  # write via server action + revalidate
+  await db.post.create({ data })
+  revalidatePath("/posts")
+
+  # client SWR with mutation
+  const { data, mutate } = useSWR("/api/posts", fetcher)
+  await fetch("/api/posts", { method: "POST", body: JSON.stringify(data) })
+  mutate()  // revalidate

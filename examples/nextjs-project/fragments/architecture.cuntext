@@ -1,0 +1,37 @@
+ARCHITECTURE [project structure and conventions for adding features]
+deps=index.cuntext
+
+routing:
+  App Router only — no pages/ directory
+  app/{route}/page.tsx = route component
+  app/{route}/layout.tsx = shared wrapper (persists across navigations)
+  app/{route}/loading.tsx = automatic Suspense boundary
+  app/api/{route}/route.ts = API handler (export GET POST PUT DELETE by name)
+
+components:
+  Server Components by default — no "use client" unless you need browser APIs, state, or event handlers
+  Shared UI: components/ui/ (shadcn/ui primitives)
+  Feature components: components/{feature}/
+  Props typed inline — no separate interface files for simple shapes
+
+data:
+  Server components: direct await — no useEffect, no fetch wrapper
+  Client components: SWR for reads, Server Actions for mutations
+  DB access: import { db } from "@/lib/db" (Prisma client singleton)
+
+new-feature checklist:
+  1. route:    app/{name}/page.tsx
+  2. mutation: app/actions/{name}.ts  (mark "use server")
+  3. schema:   prisma/schema.prisma → npx prisma migrate dev --name {name}
+  4. types:    inferred from Prisma — avoid hand-writing model types
+
+note: use next/navigation (not next/router). useRouter() = client-only, needs "use client"
+
+ex:
+  # server page with direct DB fetch
+  // app/dashboard/page.tsx
+  import { db } from "@/lib/db"
+  export default async function Dashboard() {
+    const items = await db.item.findMany({ where: { userId: session.user.id } })
+    return <ItemList items={items} />
+  }
